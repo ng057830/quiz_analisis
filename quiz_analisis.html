@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz de Análisis Real: Conceptos Básicos</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+  <style>
+    :root {
+      --primary-color: #2563eb;
+      --secondary-color: #10b981;
+      --background-color: #f8fafc;
+      --text-color: #1e293b;
+      --border-color: #e2e8f0;
+      --correct-color: #10b981;
+      --incorrect-color: #ef4444;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Roboto', sans-serif;
+    }
+
+    body {
+      background-color: var(--background-color);
+      color: var(--text-color);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .screen {
+      display: none;
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    h1 {
+      color: var(--primary-color);
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    h2 {
+      color: var(--secondary-color);
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .btn {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background-color 0.3s;
+    }
+
+    .btn:hover {
+      background-color: #1d4ed8;
+    }
+
+    .options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+
+    .option {
+      padding: 1rem;
+      border: 2px solid var(--border-color);
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-align: center;
+    }
+
+    .option:hover {
+      border-color: var(--secondary-color);
+      background-color: #f0f9ff;
+    }
+
+    .option.selected {
+      border-color: var(--primary-color);
+      background-color: #e0f2fe;
+    }
+
+    .hint-container {
+      margin-top: 1rem;
+      padding: 1rem;
+      background-color: #f0fdf4;
+      border-radius: 0.5rem;
+      border: 1px solid var(--secondary-color);
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 0.5rem;
+      background-color: var(--border-color);
+      border-radius: 0.25rem;
+      margin: 1rem 0;
+      overflow: hidden;
+    }
+
+    .progress {
+      height: 100%;
+      background-color: var(--primary-color);
+      border-radius: 0.25rem;
+      transition: width 0.3s ease-in-out;
+      width: 0%;
+    }
+
+    #hintBtn {
+      background-color: var(--secondary-color);
+      margin-top: 1rem;
+    }
+
+    #hintBtn:hover {
+      background-color: #047857;
+    }
+
+    .result-question {
+      margin-bottom: 1.5rem;
+    }
+
+    .result-question h3 {
+      margin-bottom: 0.5rem;
+    }
+
+    .result-option {
+      padding: 0.5rem;
+      border: 1px solid var(--border-color);
+      border-radius: 0.25rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .correct {
+      background-color: var(--correct-color);
+      color: white;
+      border-color: var(--correct-color);
+    }
+
+    .incorrect {
+      background-color: var(--incorrect-color);
+      color: white;
+      border-color: var(--incorrect-color);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div id="startScreen" class="screen active">
+      <h1>Quiz de Análisis Real: Conceptos Básicos</h1>
+      <h2>Preguntas de opción múltiple • Fundamentos de Análisis Real</h2>
+      <p>Este quiz se enfoca en verificar la comprensión conceptual de los fundamentos del análisis real, incluyendo números reales y complejos, sucesiones, series, límites, continuidad, derivadas e integrales.</p>
+      <button class="btn" onclick="startQuiz()">Comenzar Quiz</button>
+    </div>
+
+    <div id="quizScreen" class="screen">
+      <div class="progress-bar">
+        <div id="progress" class="progress"></div>
+      </div>
+      <h2 id="questionText"></h2>
+      <div id="options" class="options"></div>
+      <button id="hintBtn" class="btn" onclick="showHint()">Mostrar Pista</button>
+      <div id="hintContainer" class="hint-container" style="display: none;"></div>
+    </div>
+
+    <div id="resultsScreen" class="screen">
+      <h1>Resultados del Quiz</h1>
+      <h2 id="score"></h2>
+      <p id="feedback"></p>
+      <div id="detailedResults"></div>
+      <button class="btn" onclick="restartQuiz()">Intentar de Nuevo</button>
+    </div>
+  </div>
+
+  <script>
+    MathJax.Hub.Config({
+      tex2jax: { inlineMath: [['\\(', '\\)']] }
+    });
+
+    const questions = [
+      {
+        question: "¿Cuál de las siguientes afirmaciones es verdadera sobre el conjunto de los números reales \\( \\mathbb{R} \\)?",
+        options: [
+          "Incluye todos los números racionales e irracionales.",
+          "Es un subconjunto de los números enteros.",
+          "Contiene únicamente los números positivos.",
+          "Es lo mismo que el conjunto de los números naturales."
+        ],
+        correct: 0,
+        hints: [
+          "Los números reales abarcan tanto los racionales como los irracionales.",
+          "Los números enteros y naturales son subconjuntos de los números reales."
+        ]
+      },
+      {
+        question: "¿Cuál es la unidad imaginaria \\( i \\) definida en los números complejos?",
+        options: [
+          "Un número real positivo.",
+          "Un número tal que \\( i^2 = -1 \\).",
+          "Un número irracional mayor que 1.",
+          "Un número complejo cuyo cuadrado es 1."
+        ],
+        correct: 1,
+        hints: [
+          "La unidad imaginaria \\( i \\) se define para extender los números reales.",
+          "Recuerda que \\( i^2 = -1 \\)."
+        ]
+      },
+      {
+        question: "¿Cuál es el dominio de definición natural de la función \\( f(x) = \\frac{1}{x} \\)?",
+        options: [
+          "Todos los números reales.",
+          "Todos los números reales excepto \\( x = 1 \\).",
+          "Todos los números reales excepto \\( x = 0 \\).",
+          "Solo los números positivos."
+        ],
+        correct: 2,
+        hints: [
+          "La división por cero no está definida.",
+          "Busca los valores de \\( x \\) que hacen que el denominador sea cero."
+        ]
+      },
+      {
+        question: "¿Qué es una sucesión convergente de números reales?",
+        options: [
+          "Una sucesión que se acerca a un número finito específico.",
+          "Una sucesión que aumenta indefinidamente.",
+          "Una sucesión que alterna entre valores positivos y negativos.",
+          "Una sucesión que nunca repite valores."
+        ],
+        correct: 0,
+        hints: [
+          "La convergencia implica acercamiento a un límite finito.",
+          "Piensa en la sucesión \\( a_n = \\frac{1}{n} \\)."
+        ]
+      },
+      {
+        question: "¿Qué condición debe cumplir una serie geométrica \\( \\sum_{n=0}^{\\infty} ar^n \\) para ser convergente?",
+        options: [
+          "El término general debe ser cero.",
+          "La razón común \\( r \\) debe satisfacer \\( |r| < 1 \\).",
+          "La razón común \\( r \\) debe ser mayor que 1.",
+          "El primer término \\( a \\) debe ser cero."
+        ],
+        correct: 1,
+        hints: [
+          "Las series geométricas convergen si el valor absoluto de \\( r \\) es menor que 1.",
+          "Si \\( |r| \\geq 1 \\), la serie diverge."
+        ]
+      },
+      {
+        question: "Una función \\( f(x) \\) es continua en un punto \\( x = a \\) si y solo si:",
+        options: [
+          "El límite lateral izquierdo existe en \\( x = a \\).",
+          "La función no está definida en \\( x = a \\).",
+          "El límite cuando \\( x \\to a \\) de \\( f(x) \\) existe y es igual a \\( f(a) \\).",
+          "La derivada de \\( f(x) \\) existe en \\( x = a \\)."
+        ],
+        correct: 2,
+        hints: [
+          "La continuidad en un punto requiere que el límite y el valor de la función coincidan.",
+          "No es necesario que la derivada exista para la continuidad."
+        ]
+      },
+      {
+        question: "¿Cuál es la definición de la derivada de una función \\( f(x) \\) en un punto \\( x = a \\)?",
+        options: [
+          "\\( f'(a) = \\lim_{h \\to 0} \\frac{f(a+h) - f(a)}{h} \\)",
+          "\\( f'(a) = f(a+h) - f(a) \\)",
+          "\\( f'(a) = \\frac{f(a)}{a} \\)",
+          "\\( f'(a) = \\int_{a}^{a+h} f(x) dx \\)"
+        ],
+        correct: 0,
+        hints: [
+          "La derivada se define como el límite del cociente incremental.",
+          "Es una medida de la tasa de cambio instantánea."
+        ]
+      },
+      {
+        question: "Para encontrar los máximos y mínimos locales de una función \\( f(x) \\), ¿qué condición se debe analizar?",
+        options: [
+          "Los puntos donde \\( f(x) = 0 \\).",
+          "Los puntos donde \\( f'(x) = 0 \\) o \\( f'(x) \\) no existe.",
+          "Los puntos donde \\( f''(x) = 0 \\).",
+          "Todos los valores de \\( x \\) en el dominio de \\( f \\)."
+        ],
+        correct: 1,
+        hints: [
+          "Los puntos críticos se encuentran donde la derivada es cero o no existe.",
+          "Estos puntos son candidatos a extremos locales."
+        ]
+      },
+      {
+        question: "¿Qué representa la integral definida de una función continua \\( f(x) \\) en un intervalo \\([a,b]\\)?",
+        options: [
+          "El área bajo la curva \\( f(x) \\) entre \\( x = a \\) y \\( x = b \\).",
+          "La pendiente de \\( f(x) \\) en \\( x = a \\).",
+          "El valor de \\( f(x) \\) en \\( x = b \\).",
+          "La tasa de cambio promedio de \\( f(x) \\) en \\([a,b]\\)."
+        ],
+        correct: 0,
+        hints: [
+          "La integral definida calcula acumulaciones, como áreas bajo curvas.",
+          "Visualiza el gráfico de \\( f(x) \\) y el área entre la curva y el eje \\( x \\)."
+        ]
+      },
+      {
+        question: "El Teorema Fundamental del Cálculo conecta:",
+        options: [
+          "La derivada y la integral definida.",
+          "La función y su límite al infinito.",
+          "La serie y su sucesión parcial.",
+          "La continuidad y la derivabilidad."
+        ],
+        correct: 0,
+        hints: [
+          "El teorema establece que la derivada de la integral acumulativa de una función es la función misma.",
+          "Permite calcular integrales definidas usando antiderivadas."
+        ]
+      },
+      {
+        question: "¿Cuál de las siguientes es una función trascendental?",
+        options: [
+          "\\( f(x) = x^2 \\)",
+          "\\( f(x) = \\ln x \\)",
+          "\\( f(x) = 3x + 5 \\)",
+          "\\( f(x) = x^{1/2} \\)"
+        ],
+        correct: 1,
+        hints: [
+          "Funciones trascendentales no son algebraicas.",
+          "Logaritmos y exponenciales son ejemplos de funciones trascendentales."
+        ]
+      },
+      {
+        question: "La antiderivada de \\( f(x) = 2x \\) es:",
+        options: [
+          "\\( F(x) = x^2 + C \\)",
+          "\\( F(x) = 2x + C \\)",
+          "\\( F(x) = \\ln x + C \\)",
+          "\\( F(x) = x^2 \\)"
+        ],
+        correct: 0,
+        hints: [
+          "La derivada de \\( x^2 \\) es \\( 2x \\).",
+          "No olvides incluir la constante de integración \\( C \\)."
+        ]
+      },
+      {
+        question: "Una integral impropia es aquella en la que:",
+        options: [
+          "El intervalo de integración es finito.",
+          "La función integranda es siempre positiva.",
+          "El intervalo de integración es infinito o la función tiene una discontinuidad en el intervalo.",
+          "La integral siempre converge a un número finito."
+        ],
+        correct: 2,
+        hints: [
+          "Las integrales impropias pueden involucrar límites infinitos o singularidades.",
+          "Se evalúan usando límites."
+        ]
+      },
+      {
+        question: "El Teorema de Taylor permite:",
+        options: [
+          "Encontrar la integral exacta de cualquier función.",
+          "Aproximar una función diferenciable mediante un polinomio.",
+          "Calcular el límite de una sucesión divergente.",
+          "Determinar si una serie es convergente."
+        ],
+        correct: 1,
+        hints: [
+          "Los polinomios de Taylor se basan en derivadas en un punto.",
+          "Es útil para aproximar funciones complicadas."
+        ]
+      },
+      {
+        question: "Una serie de funciones \\( \\sum_{n=1}^{\\infty} f_n(x) \\) converge uniformemente en un conjunto \\( A \\) si:",
+        options: [
+          "Converge punto por punto en \\( A \\).",
+          "La serie converge y su suma es continua en \\( A \\).",
+          "La velocidad de convergencia es la misma en todos los puntos de \\( A \\).",
+          "Para todo \\( \\epsilon > 0 \\), existe \\( N \\) independiente de \\( x \\) tal que para \\( n > N \\), \\( |S_n(x) - S(x)| < \\epsilon \\)."
+        ],
+        correct: 3,
+        hints: [
+          "La convergencia uniforme implica que \\( N \\) no depende de \\( x \\).",
+          "Es una condición más fuerte que la convergencia puntual."
+        ]
+      }
+    ];
+
+    function shuffleOptions(question) {
+      for (let i = question.options.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [question.options[i], question.options[j]] = [question.options[j], question.options[i]];
+        if (question.correct === i) {
+          question.correct = j;
+        } else if (question.correct === j) {
+          question.correct = i;
+        }
+      }
+    }
+
+    questions.forEach(shuffleOptions);
+
+    let currentQuestion = 0;
+    let score = 0;
+    let selectedOption = null;
+    let currentHint = 0;
+    let userAnswers = [];
+
+    function startQuiz() {
+      document.getElementById('startScreen').classList.remove('active');
+      document.getElementById('quizScreen').classList.add('active');
+      showQuestion();
+    }
+
+    function showQuestion() {
+      const question = questions[currentQuestion];
+      document.getElementById('questionText').innerHTML = question.question;
+      document.getElementById('progress').style.width = `${(currentQuestion / questions.length) * 100}%`;
+
+      const optionsContainer = document.getElementById('options');
+      optionsContainer.innerHTML = '';
+
+      question.options.forEach((option, index) => {
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'option';
+        optionDiv.innerHTML = option;
+        optionDiv.onclick = () => {
+          selectOption(index);
+          nextQuestion();
+        };
+        optionsContainer.appendChild(optionDiv);
+      });
+
+      MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
+
+      document.getElementById('hintContainer').style.display = 'none';
+      currentHint = 0;
+      selectedOption = null;
+    }
+
+    function selectOption(index) {
+      const options = document.querySelectorAll('.option');
+      options.forEach(option => option.classList.remove('selected'));
+      options[index].classList.add('selected');
+      selectedOption = index;
+      userAnswers[currentQuestion] = index;
+    }
+
+    function showHint() {
+      const question = questions[currentQuestion];
+      if (currentHint < question.hints.length) {
+        const hintContainer = document.getElementById('hintContainer');
+        hintContainer.style.display = 'block';
+        hintContainer.innerHTML = question.hints[currentHint];
+        currentHint++;
+        MathJax.Hub.Queue(["Typeset", MathJax.Hub, hintContainer]);
+      }
+    }
+
+    function nextQuestion() {
+      if (selectedOption !== null) {
+        if (selectedOption === questions[currentQuestion].correct) {
+          score++;
+        }
+
+        currentQuestion++;
+
+        if (currentQuestion < questions.length) {
+          showQuestion();
+        } else {
+          showResults();
+        }
+      } else {
+        alert('Por favor selecciona una opción');
+      }
+    }
+
+    function showResults() {
+      document.getElementById('quizScreen').classList.remove('active');
+      document.getElementById('resultsScreen').classList.add('active');
+
+      const scoreElement = document.getElementById('score');
+      const feedbackElement = document.getElementById('feedback');
+      const detailedResults = document.getElementById('detailedResults');
+
+      scoreElement.textContent = `Puntuación: ${score} de ${questions.length}`;
+
+      if (score >= questions.length * 0.8) {
+        feedbackElement.textContent = "¡Excelente! Tienes una comprensión sólida de los conceptos fundamentales del análisis real.";
+      } else if (score >= questions.length * 0.6) {
+        feedbackElement.textContent = "Buen trabajo, aunque algunos conceptos podrían revisarse para mayor comprensión.";
+      } else {
+        feedbackElement.textContent = "Parece que algunos conceptos necesitan refuerzo. Revisar estos temas te ayudará a fortalecer tu comprensión.";
+      }
+
+      // Mostrar las respuestas detalladas
+      detailedResults.innerHTML = '';
+
+      questions.forEach((question, index) => {
+        const questionDiv = document.createElement('div');
+        questionDiv.className = 'result-question';
+
+        const questionTitle = document.createElement('h3');
+        questionTitle.innerHTML = `Pregunta ${index + 1}: ${question.question}`;
+        questionDiv.appendChild(questionTitle);
+
+        const optionsList = document.createElement('div');
+
+        question.options.forEach((option, i) => {
+          const optionDiv = document.createElement('div');
+          optionDiv.className = 'result-option';
+
+          if (userAnswers[index] === i) {
+            if (i === question.correct) {
+              optionDiv.classList.add('correct');
+            } else {
+              optionDiv.classList.add('incorrect');
+            }
+          }
+
+          if (i === question.correct && userAnswers[index] !== question.correct) {
+            optionDiv.classList.add('correct');
+          }
+
+          optionDiv.innerHTML = option;
+          optionsList.appendChild(optionDiv);
+        });
+
+        questionDiv.appendChild(optionsList);
+        detailedResults.appendChild(questionDiv);
+      });
+
+      MathJax.Hub.Queue(["Typeset", MathJax.Hub, detailedResults]);
+    }
+
+    function restartQuiz() {
+      currentQuestion = 0;
+      score = 0;
+      selectedOption = null;
+      userAnswers = [];
+      document.getElementById('resultsScreen').classList.remove('active');
+      document.getElementById('startScreen').classList.add('active');
+      questions.forEach(shuffleOptions);
+    }
+  </script>
+</body>
+
+</html>
